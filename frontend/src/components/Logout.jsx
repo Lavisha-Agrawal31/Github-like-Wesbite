@@ -1,6 +1,6 @@
 import { MdLogout } from "react-icons/md";
-import { useAuthContext } from "../../context/AuthContext";
 import {toast} from 'react-hot-toast';
+import { useAuthContext } from "../context/AuthContext";
 
 // TODO Implement Logout functionality
 

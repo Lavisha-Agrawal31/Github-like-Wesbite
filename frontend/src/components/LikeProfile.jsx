@@ -1,7 +1,8 @@
 
 import { FaHeart } from 'react-icons/fa6';
 import toast from 'react-hot-toast';
-import { useAuthContext } from '../../context/AuthContext';
+import { useAuthContext } from "../context/AuthContext"
+
 
 
 const LikeProfile = ({userProfile}) => {
