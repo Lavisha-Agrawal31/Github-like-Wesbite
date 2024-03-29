@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import toast from 'react-hot-toast';
+import toast from "react-hot-toast";
 
 import ProfileInfo from "../components/ProfileInfo";
 import Repos from "../components/Repos";
 import Search from "../components/Search";
 import SortRepos from "../components/SortRepos";
 import Spinner from "../components/Spinner";
-
 
 const HomePage = () => {
 	const [userProfile, setUserProfile] = useState(null);
@@ -15,45 +14,38 @@ const HomePage = () => {
 
 	const [sortType, setSortType] = useState("recent");
 
-	const getUserProfileAndRepos = useCallback(async(username="lavisha-agrawal31") => {
+	const getUserProfileAndRepos = useCallback(async (username = "lavisha-agrawal31") => {
 		setLoading(true);
 		try {
-			const userRes = await fetch(`https://api.github.com/users/${username}`,{
-				headers:{
-					authorization: `token ${import.meta.env.VITE_GITHUB_API_KEY}`,
-				},
-			});
-			const userProfile = await userRes.json();
+			const res = await fetch(`/api/users/profile/${username}`);
+			const { repos, userProfile } = await res.json();
+
+			repos.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); //descending, recent first
+
+			setRepos(repos);
 			setUserProfile(userProfile);
 
-			const repoRes = await fetch(userProfile.repos_url);
-			const repos = await repoRes.json();
-			repos.sort((a,b) => new Date(b.created_at) - new Date(a.created_at)); //descending, recent first
-			setRepos(repos);
-
-			
-			return {userProfile,repos};
-
+			return { userProfile, repos };
 		} catch (error) {
 			toast.error(error.message);
 		} finally {
 			setLoading(false);
 		}
-	},[]);
+	}, []);
 
 	useEffect(() => {
 		getUserProfileAndRepos();
-	},[getUserProfileAndRepos]);
+	}, [getUserProfileAndRepos]);
 
-	const onSearch = async (e,username) => {
+	const onSearch = async (e, username) => {
 		e.preventDefault();
 
 		setLoading(true);
 		setRepos([]);
 		setUserProfile(null);
 
-		const {userProfile, repos} = await getUserProfileAndRepos(username);
-	
+		const { userProfile, repos } = await getUserProfileAndRepos(username);
+
 		setUserProfile(userProfile);
 		setRepos(repos);
 		setLoading(false);
@@ -70,14 +62,14 @@ const HomePage = () => {
 		}
 		setSortType(sortType);
 		setRepos([...repos]);
-    };
+	};
 
 	return (
 		<div className='m-4'>
-			<Search onSearch = {onSearch}/>
-			{repos.length > 0 && <SortRepos onSort = {onSort} sortType = {sortType} />}
+			<Search onSearch={onSearch} />
+			{repos.length > 0 && <SortRepos onSort={onSort} sortType={sortType} />}
 			<div className='flex gap-4 flex-col lg:flex-row justify-center items-start'>
-				{userProfile && !loading && <ProfileInfo userProfile = { userProfile }/>}
+				{userProfile && !loading && <ProfileInfo userProfile={userProfile} />}
 
 				{!loading && <Repos repos={repos} />}
 				{loading && <Spinner />}
