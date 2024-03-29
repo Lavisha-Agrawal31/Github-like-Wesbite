@@ -6,6 +6,7 @@ import Repos from "../components/Repos";
 import Search from "../components/Search";
 import SortRepos from "../components/SortRepos";
 import Spinner from "../components/Spinner";
+import { useAuthContext } from "../context/AuthContext";
 
 const HomePage = () => {
 	const [userProfile, setUserProfile] = useState(null);
@@ -13,25 +14,29 @@ const HomePage = () => {
 	const [loading, setLoading] = useState(false);
 
 	const [sortType, setSortType] = useState("recent");
+	const {authUser} = useAuthContext();
 
-	const getUserProfileAndRepos = useCallback(async (username = "lavisha-agrawal31") => {
-		setLoading(true);
-		try {
-			const res = await fetch(`/api/users/profile/${username}`);
-			const { repos, userProfile } = await res.json();
+	const getUserProfileAndRepos = useCallback(async () => {
+        if (!authUser?.username) {
+            toast.error('User is not authenticated');
+            return;
+        }
 
-			repos.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); //descending, recent first
+        setLoading(true);
+        try {
+            const res = await fetch(`/api/users/profile/${authUser.username}`);
+            const { repos, userProfile } = await res.json();
 
-			setRepos(repos);
-			setUserProfile(userProfile);
+            repos.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); //descending, recent first
 
-			return { userProfile, repos };
-		} catch (error) {
-			toast.error(error.message);
-		} finally {
-			setLoading(false);
-		}
-	}, []);
+            setRepos(repos);
+            setUserProfile(userProfile);
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setLoading(false);
+        }
+    }, [authUser?.username]); 
 
 	useEffect(() => {
 		getUserProfileAndRepos();
@@ -39,18 +44,29 @@ const HomePage = () => {
 
 	const onSearch = async (e, username) => {
 		e.preventDefault();
-
+	
 		setLoading(true);
 		setRepos([]);
 		setUserProfile(null);
-
-		const { userProfile, repos } = await getUserProfileAndRepos(username);
-
-		setUserProfile(userProfile);
-		setRepos(repos);
-		setLoading(false);
-		setSortType("recent");
+	
+		try {
+			const response = await fetch(`/api/users/profile/${username}`);
+			if (!response.ok) {
+				throw new Error('Network response was not ok');
+			}
+			const data = await response.json();
+			const { userProfile, repos } = data;
+	
+			setUserProfile(userProfile);
+			setRepos(repos);
+		} catch (error) {
+			toast.error(`Error fetching data: ${error.message}`);
+		} finally {
+			setLoading(false);
+			setSortType("recent");
+		}
 	};
+	
 
 	const onSort = (sortType) => {
 		if (sortType === "recent") {
